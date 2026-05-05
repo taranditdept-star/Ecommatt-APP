@@ -289,9 +289,8 @@ const App: React.FC = () => {
     const [loans, setLoans] = useState<LoanRecord[]>([]);
     const [users, setUsers] = useState<User[]>([]);
 
-
-    const [notificationConfig, setNotificationConfig] = useState<NotificationConfig>(() => );
-    const [medicalInventory, setMedicalInventory] = useState<MedicalItem[]>(() => );
+    const [notificationConfig, setNotificationConfig] = useState<NotificationConfig>({} as NotificationConfig);
+    const [medicalInventory, setMedicalInventory] = useState<MedicalItem[]>([]);
 
     // Seed Products
     const [products] = useState<Product[]>([
@@ -303,7 +302,7 @@ const App: React.FC = () => {
     ]);
 
     // Crop State
-    const [fields, setFields] = useState<Field[]>(() => );
+    const [fields, setFields] = useState<Field[]>([]);
 
     const [crops] = useState<Crop[]>([
         { id: 'c1', name: 'Maize', variety: 'SC727', type: 'Cereal', daysToMaturity: 120, expectedYieldPerHa: 8 },
@@ -312,44 +311,43 @@ const App: React.FC = () => {
         { id: 'c4', name: 'Cabbages', variety: 'Fabian', type: 'Vegetable', daysToMaturity: 85, expectedYieldPerHa: 60 }
     ]);
 
-    const [cropCycles, setCropCycles] = useState<CropCycle[]>(() => );
-    const [cropActivities, setCropActivities] = useState<CropActivity[]>(() => );
+    const [cropCycles, setCropCycles] = useState<CropCycle[]>([]);
+    const [cropActivities, setCropActivities] = useState<CropActivity[]>([]);
     const [precisionSelectedFieldId, setPrecisionSelectedFieldId] = useState<string | null>(null);
 
-    const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>(() => );
+    const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
 
-    const [performanceScores, setPerformanceScores] = useState<PerformanceScore[]>(() => );
+    const [performanceScores, setPerformanceScores] = useState<PerformanceScore[]>([]);
 
-    const [pieceRateEarnings, setPieceRateEarnings] = useState<PieceRateEarning[]>(() => );
+    const [pieceRateEarnings, setPieceRateEarnings] = useState<PieceRateEarning[]>([]);
 
     // Machinery State
-    const [assets, setAssets] = useState<Asset[]>(() => );
-    const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>(() => );
-    const [fuelLogs, setFuelLogs] = useState<FuelLog[]>(() => );
+    const [assets, setAssets] = useState<Asset[]>([]);
+    const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
+    const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
 
-    const [timesheets, setTimesheets] = useState<TimesheetLog[]>(() => );
+    const [timesheets, setTimesheets] = useState<TimesheetLog[]>([]);
 
     // Manure State
-    const [manureStock, setManureStock] = useState<number>(() => );
+    const [manureStock, setManureStock] = useState<number>(0);
 
     // Biosecurity & Automation State
-    const [visitorLogs, setVisitorLogs] = useState<VisitorLogEntry[]>(() => );
-    const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDoc[]>(() => );
-    const [protocols, setProtocols] = useState<Protocol[]>(() => );
+    const [visitorLogs, setVisitorLogs] = useState<VisitorLogEntry[]>([]);
+    const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDoc[]>([]);
+    const [protocols, setProtocols] = useState<Protocol[]>([]);
 
     // CRM State
-    const [customers, setCustomers] = useState<Customer[]>(() => );
-    const [orders, setOrders] = useState<Order[]>(() => );
-    const [invoices, setInvoices] = useState<Invoice[]>(() => );
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
 
     // Logistics & Supply Chain State
-    const [logisticsRoutes, setLogisticsRoutes] = useState<LogisticsRoute[]>(() => );
+    const [logisticsRoutes, setLogisticsRoutes] = useState<LogisticsRoute[]>([]);
 
     // Biosecurity Tracing State
-    const [penMovements, setPenMovements] = useState<PenMovement[]>(() => );
+    const [penMovements, setPenMovements] = useState<PenMovement[]>([]);
 
-    const [infectionAlerts, setInfectionAlerts] = useState<InfectionAlert[]>(() => ', severity: 'Critical', detectedAt: today, status: 'Active' }
-    ]));
+    const [infectionAlerts, setInfectionAlerts] = useState<InfectionAlert[]>([]);
 
     const [wholesaleProducts] = useState<WholesaleProduct[]>([
         { id: 'wp1', name: 'Premium Pork (Sides)', category: 'Pork', availableQty: 120, unit: 'kg', pricePerUnit: 4.5, qualityGrade: 'A' },
@@ -357,17 +355,17 @@ const App: React.FC = () => {
         { id: 'wp3', name: 'Fresh Sugar Beans', category: 'Grain', availableQty: 850, unit: 'kg', pricePerUnit: 1.2, qualityGrade: 'A' }
     ]);
 
-    const [inventoryScans, setInventoryScans] = useState<InventoryScan[]>(() => );
+    const [inventoryScans, setInventoryScans] = useState<InventoryScan[]>([]);
 
     // Multi-Currency & Procurement State
-    const [supplierQuotes] = useState<SupplierQuote[]>(() => );
+    const [supplierQuotes] = useState<SupplierQuote[]>([]);
 
     const [marketRates] = useState<Record<string, number>>({
         'ZiG': 28.5,
         'ZAR': 19.2
     });
 
-    const [solarStatus, setSolarStatus] = useState<SolarSystemStatus>(() => );
+    const [solarStatus, setSolarStatus] = useState<SolarSystemStatus>({} as SolarSystemStatus);
 
     
 

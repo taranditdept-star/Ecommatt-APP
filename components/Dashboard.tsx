@@ -97,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ pigs, tasks, financeRecords, feed
         >
             <div>
                 <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${highlight ? 'text-gray-400' : 'text-gray-500'}`}>{title}</p>
-                <h3 className="text-4xl font-bold tracking-tight">{value}</h3>
+                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">{value}</h3>
                 {subtitle && <p className={`text-sm font-bold mt-2 flex items-center gap-1 ${highlight ? 'text-ecomattGreen' : 'text-gray-400'}`}>{subtitle}</p>}
             </div>
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${highlight ? 'bg-gray-800' : 'bg-gray-50'} ${color}`}>

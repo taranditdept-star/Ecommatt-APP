@@ -280,7 +280,7 @@ const CropManager: React.FC<CropManagerProps> = ({ fields, crops, cycles, activi
             )}
 
             {!selectedFieldId && activeTab === 'Harvests' && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>

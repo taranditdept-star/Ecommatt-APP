@@ -43,7 +43,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
                 <div className="flex-1 min-w-0 flex items-center gap-2">
                     {!showBack && (
                         <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shrink-0 shadow-inner">
-                            <img src="ecomatt_logo_text.png" alt="Logo" className="w-full h-full object-contain" />
+                            <img src="ecomatt_logo.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                     )}
                     <div className="flex-1 min-w-0">

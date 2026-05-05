@@ -91,22 +91,20 @@ const Finance: React.FC<FinanceProps> = ({
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-24">
 
             {/* Premium Header */}
-            <div className="flex justify-between items-end mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4 px-2">
                 <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Financial Hub</h2>
-                    <p className="text-sm text-gray-500 font-medium">Manage your farm's economic health</p>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Financial Hub</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 font-medium">Manage your farm's economic health</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                    <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1">
-                        <button
-                            onClick={() => setDisplayCurrency('USD')}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'USD' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >USD</button>
-                        <button
-                            onClick={() => setDisplayCurrency('ZiG')}
-                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'ZiG' ? 'bg-ecomattGreen text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >ZiG</button>
-                    </div>
+                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 self-end sm:self-auto">
+                    <button
+                        onClick={() => setDisplayCurrency('USD')}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'USD' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >USD</button>
+                    <button
+                        onClick={() => setDisplayCurrency('ZiG')}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'ZiG' ? 'bg-ecomattGreen text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >ZiG</button>
                 </div>
             </div>
 
@@ -185,7 +183,7 @@ const Finance: React.FC<FinanceProps> = ({
 
             {/* Modern Tools Grid */}
             <h3 className="text-[11px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em] ml-2">Intelligence & Analysis</h3>
-            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-3 mb-8">
+            <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-2 mb-8">
                 {[
                     { icon: 'fa-layer-group', label: 'Batch P&L', color: 'bg-blue-50 text-blue-600', action: onOpenBatch },
                     { icon: 'fa-calculator', label: 'Projection', color: 'bg-orange-50 text-orange-600', action: onOpenCalculator },

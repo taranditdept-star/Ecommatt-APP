@@ -19,24 +19,24 @@ const PigManager: React.FC<PigManagerProps> = ({ pigs, onAddPigClick, onSelectPi
 
   return (
     <div className="animate-in fade-in duration-500 pb-20">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Livestock DB</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button onClick={() => {
             const columns = ['Tag ID', 'Breed', 'Gender', 'Stage', 'Status', 'Pen', 'Weight'];
             const data = pigs.map(p => [p.tagId, p.breed, p.gender, p.stage, p.status, p.penLocation, p.weight]);
             exportToPDF('Livestock Report', columns, data, 'livestock_report.pdf');
-          }} className="bg-white text-gray-600 px-3 py-2 rounded-xl font-bold text-xs border border-gray-200 hover:bg-gray-50">
-            <i className="fas fa-file-pdf text-red-500 mr-1"></i> PDF
+          }} className="flex-1 sm:flex-none justify-center bg-white text-gray-600 px-3 py-2 rounded-xl font-bold text-[10px] border border-gray-200 hover:bg-gray-50 flex items-center">
+            <i className="fas fa-file-pdf text-red-500 mr-1 shadow-sm"></i> PDF
           </button>
           <button onClick={() => {
             exportToExcel('livestock_report.xlsx', 'Livestock', pigs);
-          }} className="bg-white text-gray-600 px-3 py-2 rounded-xl font-bold text-xs border border-gray-200 hover:bg-gray-50">
-            <i className="fas fa-file-excel text-green-600 mr-1"></i> Excel
+          }} className="flex-1 sm:flex-none justify-center bg-white text-gray-600 px-3 py-2 rounded-xl font-bold text-[10px] border border-gray-200 hover:bg-gray-50 flex items-center">
+            <i className="fas fa-file-excel text-green-600 mr-1 shadow-sm"></i> Excel
           </button>
           <button
             onClick={onAddPigClick}
-            className="bg-ecomattGreen text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-green-600 transition flex items-center gap-2"
+            className="w-full sm:w-auto bg-ecomattGreen text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-green-900/10 hover:bg-green-600 transition flex items-center justify-center gap-2"
           >
             <i className="fas fa-plus"></i> New Animal
           </button>

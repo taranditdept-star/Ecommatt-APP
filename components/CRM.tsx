@@ -41,7 +41,7 @@ const CRM: React.FC<CRMProps> = ({ customers, orders, invoices, products, onAddO
                     </div>
                 </div>
 
-                <div className="flex bg-slate-900/5 p-1 rounded-2xl border border-slate-900/10">
+                <div className="flex bg-slate-900/5 p-1 rounded-2xl border border-slate-900/10 overflow-x-auto no-scrollbar">
                     {(['Intelligence', 'Credit', 'Orders', 'Directory', 'Aggregator'] as const).map(tab => (
                         <button
                             key={tab}

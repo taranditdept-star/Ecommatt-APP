@@ -260,7 +260,7 @@ const Layout: React.FC<LayoutProps> = ({
         {/* Brand */}
         <div className="p-6 flex items-center gap-3 border-b border-gray-800 shrink-0">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 shadow-sm">
-            <img src="ecomatt_logo_text.png" alt="Logo" className="w-full h-full object-contain" />
+            <img src="ecomatt_logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight uppercase">Ecomatt<span className="text-ecomattGreen">Farm</span></h1>

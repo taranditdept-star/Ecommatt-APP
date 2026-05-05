@@ -138,7 +138,7 @@ const FarmPOS: React.FC<FarmPOSProps> = ({ products, customers, exchangeRate, on
     }
 
     return (
-        <div className="flex h-[calc(100vh-100px)] gap-6 animate-in fade-in duration-500">
+        <div className="flex flex-col md:flex-row md:h-[calc(100vh-100px)] gap-6 animate-in fade-in duration-500">
             {/* Left: Product Catalog */}
             <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Search & Filter Header */}
@@ -220,7 +220,7 @@ const FarmPOS: React.FC<FarmPOSProps> = ({ products, customers, exchangeRate, on
             </div>
 
             {/* Right: Cart */}
-            <div className="w-96 bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
+            <div className="w-full md:w-96 bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden shrink-0">
                 <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <ShoppingCart size={20} className="text-ecomattGreen" />

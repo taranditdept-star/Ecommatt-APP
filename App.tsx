@@ -53,6 +53,8 @@ import PrecisionFeeding from './components/PrecisionFeeding';
 import FarrowingWatch from './components/FarrowingWatch';
 import { Pig, Task, PigStatus, PigStage, FeedInventory, HealthRecord, FinanceRecord, BudgetRecord, LoanRecord, ViewState, User, UserRole, TimelineEvent, NotificationConfig, MedicalItem, Product, CartItem, Field, Crop, CropCycle, CropActivity, Asset, MaintenanceLog, FuelLog, TimesheetLog, AttendanceLog, PerformanceScore, PieceRateEarning, VisitorLogEntry, KnowledgeDoc, Protocol, Customer, Order, Invoice, ExchangeRate, Currency, LogisticsRoute, WholesaleProduct, InventoryScan, SolarSystemStatus, SupplierQuote, PenMovement, InfectionAlert } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storageService';
+import { supabaseService } from './services/supabaseService';
+import { supabase } from './lib/supabase';
 
 // Mock Data (Used as initial seed only)
 const today = new Date().toISOString().split('T')[0];
@@ -211,20 +213,85 @@ const App: React.FC = () => {
     const [isVerifying, setIsVerifying] = useState(false);
     const [pendingUser, setPendingUser] = useState<any>(null);
     const [verificationCode, setVerificationCode] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Data State - Initialize from Storage or Seed
-    const [pigs, setPigs] = useState<Pig[]>(() => loadData(STORAGE_KEYS.PIGS, SEED_PIGS));
-    const [tasks, setTasks] = useState<Task[]>(() => loadData(STORAGE_KEYS.TASKS, SEED_TASKS));
-    const [feeds, setFeeds] = useState<FeedInventory[]>(() => loadData(STORAGE_KEYS.FEEDS, SEED_FEEDS));
-    const [healthRecords, setHealthRecords] = useState<HealthRecord[]>(() => loadData(STORAGE_KEYS.HEALTH, SEED_HEALTH));
-    const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>(() => loadData(STORAGE_KEYS.FINANCE, SEED_FINANCE));
-    const [budgets, setBudgets] = useState<BudgetRecord[]>(() => loadData('ECOMATT_BUDGET_DB', SEED_BUDGETS));
-    const [loans, setLoans] = useState<LoanRecord[]>(() => loadData('ECOMATT_LOANS_DB', SEED_LOANS));
-    const [users, setUsers] = useState<User[]>(() => loadData(STORAGE_KEYS.USERS, INITIAL_USERS));
+    // Initial Fetch from Supabase
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [pigsLog, tasksLog, feedsLog, financeLog] = await Promise.all([
+                    supabaseService.pigs.getAll(),
+                    supabaseService.tasks.getAll(),
+                    supabaseService.feeds.getAll(),
+                    supabaseService.finance.getAll()
+                ]);
+
+                setPigs(pigsLog);
+                setTasks(tasksLog);
+                setFeeds(feedsLog);
+                setFinanceRecords(financeLog);
+
+                // Fetch profiles (users)
+                const profiles = await supabaseService.profiles.get();
+                setUsers(profiles);
+
+            } catch (error) {
+                console.error("Error fetching data from Supabase:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        // Auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                setIsAuthenticated(true);
+                // Fetch or create profile
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+
+                if (profile) {
+                    setCurrentUser(profile as User);
+                    if (!profile.has_completed_onboarding) {
+                        setShowOnboarding(true);
+                    }
+                } else {
+                    // Create basic profile if missing (optional, usually handled by trigger)
+                    const newProfile = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        name: session.user.user_metadata.name,
+                        role: session.user.user_metadata.role || 'General Worker',
+                        has_completed_onboarding: false
+                    };
+                    await supabase.from('profiles').insert([newProfile]);
+                    setCurrentUser(newProfile as User);
+                    setShowOnboarding(true);
+                }
+                fetchData();
+            } else {
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+                setIsLoading(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    // Data State - Initialize empty, will fetch from Supabase
+    const [pigs, setPigs] = useState<Pig[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [feeds, setFeeds] = useState<FeedInventory[]>([]);
+    const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+    const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
+    const [budgets, setBudgets] = useState<BudgetRecord[]>([]);
+    const [loans, setLoans] = useState<LoanRecord[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
 
-    const [notificationConfig, setNotificationConfig] = useState<NotificationConfig>(() => loadData(STORAGE_KEYS.NOTIFICATIONS, { emails: [], alerts: { mortality: true, feed: true, tasks: false, finance: false } }));
-    const [medicalInventory, setMedicalInventory] = useState<MedicalItem[]>(() => loadData(STORAGE_KEYS.MEDICAL, []));
+    const [notificationConfig, setNotificationConfig] = useState<NotificationConfig>(() => );
+    const [medicalInventory, setMedicalInventory] = useState<MedicalItem[]>(() => );
 
     // Seed Products
     const [products] = useState<Product[]>([
@@ -236,23 +303,7 @@ const App: React.FC = () => {
     ]);
 
     // Crop State
-    const [fields, setFields] = useState<Field[]>(() => loadData('ECOMATT_FIELDS', [
-        {
-            id: 'f1',
-            name: 'Lower Field',
-            size: 2.5,
-            soilType: 'Loam',
-            location: 'South Valley',
-            status: 'Planted',
-            lastNDVI: 0.74,
-            satelliteScans: [
-                { id: 's1', date: today, imageUrl: '', ndviScore: 0.74, healthReport: 'Good growth', alerts: [] },
-                { id: 's2', date: yesterday, imageUrl: '', ndviScore: 0.68, healthReport: 'Steady', alerts: [] }
-            ]
-        },
-        { id: 'f2', name: 'Upper Terrace', size: 1.2, soilType: 'Clay-Loam', location: 'North Ridge', status: 'Preparation', lastNDVI: 0.4 },
-        { id: 'f3', name: 'Greenhouse A', size: 0.1, soilType: 'Potting Mix', location: 'Near Barn', status: 'Fallow', lastNDVI: 0.5 }
-    ]));
+    const [fields, setFields] = useState<Field[]>(() => );
 
     const [crops] = useState<Crop[]>([
         { id: 'c1', name: 'Maize', variety: 'SC727', type: 'Cereal', daysToMaturity: 120, expectedYieldPerHa: 8 },
@@ -261,73 +312,43 @@ const App: React.FC = () => {
         { id: 'c4', name: 'Cabbages', variety: 'Fabian', type: 'Vegetable', daysToMaturity: 85, expectedYieldPerHa: 60 }
     ]);
 
-    const [cropCycles, setCropCycles] = useState<CropCycle[]>(() => loadData('ECOMATT_CYCLES', []));
-    const [cropActivities, setCropActivities] = useState<CropActivity[]>(() => loadData('ECOMATT_CROP_ACTIVITIES', []));
+    const [cropCycles, setCropCycles] = useState<CropCycle[]>(() => );
+    const [cropActivities, setCropActivities] = useState<CropActivity[]>(() => );
     const [precisionSelectedFieldId, setPrecisionSelectedFieldId] = useState<string | null>(null);
 
-    const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>(() => loadData('ECOMATT_ATTENDANCE', [
-        { id: 'att1', userId: 'u1', date: yesterday, checkInTime: '07:05 AM', checkOutTime: '04:30 PM', status: 'Out', method: 'GPS' },
-        { id: 'att2', userId: 'u1', date: today, checkInTime: '08:15 AM', status: 'On Site', method: 'Biometric' }
-    ]));
+    const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>(() => );
 
-    const [performanceScores, setPerformanceScores] = useState<PerformanceScore[]>(() => loadData('ECOMATT_PERFORMANCE', [
-        { id: 'ps1', userId: 'u1', category: 'Mortality Control', score: 92, period: '2025-W48' },
-        { id: 'ps2', userId: 'u2', category: 'Mortality Control', score: 85, period: '2025-W48' },
-        { id: 'ps3', userId: 'u3', category: 'Harvest Efficiency', score: 78, period: '2025-W48' }
-    ]));
+    const [performanceScores, setPerformanceScores] = useState<PerformanceScore[]>(() => );
 
-    const [pieceRateEarnings, setPieceRateEarnings] = useState<PieceRateEarning[]>(() => loadData('ECOMATT_PIECERATE', [
-        { id: 'pr1', userId: 'u1', date: yesterday, taskType: 'Maize Picking', quantity: 45, unit: 'crates', ratePerUnit: 0.5, totalAmount: 22.5 }
-    ]));
+    const [pieceRateEarnings, setPieceRateEarnings] = useState<PieceRateEarning[]>(() => );
 
     // Machinery State
-    const [assets, setAssets] = useState<Asset[]>(() => loadData('ECOMATT_ASSETS', []));
-    const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>(() => loadData('ECOMATT_MAINTENANCE', []));
-    const [fuelLogs, setFuelLogs] = useState<FuelLog[]>(() => loadData('ECOMATT_FUEL', []));
+    const [assets, setAssets] = useState<Asset[]>(() => );
+    const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>(() => );
+    const [fuelLogs, setFuelLogs] = useState<FuelLog[]>(() => );
 
-    const [timesheets, setTimesheets] = useState<TimesheetLog[]>(() => loadData('ECOMATT_TIMESHEETS', []));
+    const [timesheets, setTimesheets] = useState<TimesheetLog[]>(() => );
 
     // Manure State
-    const [manureStock, setManureStock] = useState<number>(() => loadData('ECOMATT_MANURE_STOCK', 0));
+    const [manureStock, setManureStock] = useState<number>(() => );
 
     // Biosecurity & Automation State
-    const [visitorLogs, setVisitorLogs] = useState<VisitorLogEntry[]>(() => loadData('ECOMATT_VISITORS', SEED_VISITORS));
-    const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDoc[]>(() => loadData('ECOMATT_DOCS', SEED_DOCS));
-    const [protocols, setProtocols] = useState<Protocol[]>(() => loadData('ECOMATT_PROTOCOLS', SEED_PROTOCOLS));
+    const [visitorLogs, setVisitorLogs] = useState<VisitorLogEntry[]>(() => );
+    const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDoc[]>(() => );
+    const [protocols, setProtocols] = useState<Protocol[]>(() => );
 
     // CRM State
-    const [customers, setCustomers] = useState<Customer[]>(() => loadData('ECOMATT_CUSTOMERS', SEED_CUSTOMERS));
-    const [orders, setOrders] = useState<Order[]>(() => loadData('ECOMATT_ORDERS', SEED_ORDERS));
-    const [invoices, setInvoices] = useState<Invoice[]>(() => loadData('ECOMATT_INVOICES', SEED_INVOICES));
+    const [customers, setCustomers] = useState<Customer[]>(() => );
+    const [orders, setOrders] = useState<Order[]>(() => );
+    const [invoices, setInvoices] = useState<Invoice[]>(() => );
 
     // Logistics & Supply Chain State
-    const [logisticsRoutes, setLogisticsRoutes] = useState<LogisticsRoute[]>(() => loadData('ECOMATT_ROUTES', [
-        {
-            id: 'R-101',
-            driverName: 'Blessing Moyo',
-            vehicleId: 'A-01',
-            status: 'En Route',
-            stops: [
-                { locationName: 'Main Silo Complex', type: 'Pickup', status: 'Completed', arrivalTime: '08:00 AM' },
-                { locationName: 'Harare Abattoir', type: 'Abattoir', status: 'Pending' },
-                { locationName: 'Central Meat Wholesale', type: 'Dropoff', status: 'Pending' }
-            ],
-            currentLat: -17.8252,
-            currentLng: 31.0335,
-            eta: '11:45 AM'
-        }
-    ]));
+    const [logisticsRoutes, setLogisticsRoutes] = useState<LogisticsRoute[]>(() => );
 
     // Biosecurity Tracing State
-    const [penMovements, setPenMovements] = useState<PenMovement[]>(() => loadData('ECOMATT_MOVEMENTS', [
-        { id: 'm1', userId: 'u2', userName: 'Mike Herdsman', penId: 'z1', penName: 'Farrowing House', timestamp: yesterday + 'T08:30:00', type: 'In', sanitized: true },
-        { id: 'm2', userId: 'u2', userName: 'Mike Herdsman', penId: 'z1', penName: 'Farrowing House', timestamp: yesterday + 'T09:15:00', type: 'Out', sanitized: true },
-        { id: 'm3', userId: 'u2', userName: 'Mike Herdsman', penId: 'z2', penName: 'Weaner Deck', timestamp: yesterday + 'T10:00:00', type: 'In', sanitized: false },
-        { id: 'm4', userId: 'u4', userName: 'Sarah Vet', penId: 'z1', penName: 'Farrowing House', timestamp: today + 'T07:00:00', type: 'In', sanitized: true }
-    ]));
+    const [penMovements, setPenMovements] = useState<PenMovement[]>(() => );
 
-    const [infectionAlerts, setInfectionAlerts] = useState<InfectionAlert[]>(() => loadData('ECOMATT_INFECTION_ALERTS', [
-        { id: 'a1', penId: 'z1', penName: 'Farrowing House', disease: 'Swine Fever (Suspected)', severity: 'Critical', detectedAt: today, status: 'Active' }
+    const [infectionAlerts, setInfectionAlerts] = useState<InfectionAlert[]>(() => ', severity: 'Critical', detectedAt: today, status: 'Active' }
     ]));
 
     const [wholesaleProducts] = useState<WholesaleProduct[]>([
@@ -336,51 +357,19 @@ const App: React.FC = () => {
         { id: 'wp3', name: 'Fresh Sugar Beans', category: 'Grain', availableQty: 850, unit: 'kg', pricePerUnit: 1.2, qualityGrade: 'A' }
     ]);
 
-    const [inventoryScans, setInventoryScans] = useState<InventoryScan[]>(() => loadData('ECOMATT_SCANS', []));
+    const [inventoryScans, setInventoryScans] = useState<InventoryScan[]>(() => );
 
     // Multi-Currency & Procurement State
-    const [supplierQuotes] = useState<SupplierQuote[]>(() => loadData('ECOMATT_QUOTES', [
-        { id: 'q1', supplierName: 'AgriSupply S.A.', itemName: 'Grower Pellets', price: 2800, currency: 'ZAR', date: today, validUntil: tomorrow, notes: 'Includes bulk discount' },
-        { id: 'q2', supplierName: 'Zimbabwe Feed Co.', itemName: 'Grower Pellets', price: 4500, currency: 'ZiG', date: today, validUntil: tomorrow },
-        { id: 'q3', supplierName: 'Global Vet Supplies', itemName: 'Sow Meal', price: 150, currency: 'USD', date: today, validUntil: tomorrow },
-        { id: 'q4', supplierName: 'Local Mill', itemName: 'Sow Meal', price: 4200, currency: 'ZiG', date: today, validUntil: tomorrow }
-    ]));
+    const [supplierQuotes] = useState<SupplierQuote[]>(() => );
 
     const [marketRates] = useState<Record<string, number>>({
         'ZiG': 28.5,
         'ZAR': 19.2
     });
 
-    const [solarStatus, setSolarStatus] = useState<SolarSystemStatus>(() => loadData('ECOMATT_SOLAR', {
-        batteryLevel: 84.5,
-        generationKw: 12.4,
-        currentLoadKw: 4.8,
-        isGridDown: false,
-        assets: [
-            { id: 'ea1', name: 'Primary Water Pump', type: 'Critical', powerDrawKw: 1.2, status: 'Active' },
-            { id: 'ea2', name: 'Pen Cooling Fans', type: 'Non-Essential', powerDrawKw: 0.8, status: 'Active' },
-            { id: 'ea3', name: 'Security Perimeter Lighting', type: 'Critical', powerDrawKw: 0.4, status: 'Active' },
-            { id: 'ea4', name: 'Staff Quarters AC', type: 'Non-Essential', powerDrawKw: 1.5, status: 'Active' },
-            { id: 'ea5', name: 'Feed Mixer', type: 'Non-Essential', powerDrawKw: 0.9, status: 'Active' }
-        ]
-    }));
+    const [solarStatus, setSolarStatus] = useState<SolarSystemStatus>(() => );
 
-    // Save Effects
-    useEffect(() => saveData('ECOMATT_FIELDS', fields), [fields]);
-    useEffect(() => saveData('ECOMATT_CYCLES', cropCycles), [cropCycles]);
-    useEffect(() => saveData('ECOMATT_ASSETS', assets), [assets]);
-    useEffect(() => saveData('ECOMATT_MAINTENANCE', maintenanceLogs), [maintenanceLogs]);
-    useEffect(() => saveData('ECOMATT_FUEL', fuelLogs), [fuelLogs]);
-    useEffect(() => saveData('ECOMATT_MANURE_STOCK', manureStock), [manureStock]);
-    useEffect(() => saveData('ECOMATT_VISITORS', visitorLogs), [visitorLogs]);
-    useEffect(() => saveData('ECOMATT_DOCS', knowledgeDocs), [knowledgeDocs]);
-    useEffect(() => saveData('ECOMATT_PROTOCOLS', protocols), [protocols]);
-    useEffect(() => saveData('ECOMATT_MOVEMENTS', penMovements), [penMovements]);
-    useEffect(() => saveData('ECOMATT_INFECTION_ALERTS', infectionAlerts), [infectionAlerts]);
-
-    useEffect(() => saveData('ECOMATT_CUSTOMERS', customers), [customers]);
-    useEffect(() => saveData('ECOMATT_ORDERS', orders), [orders]);
-    useEffect(() => saveData('ECOMATT_INVOICES', invoices), [invoices]);
+    
 
 
 
@@ -462,19 +451,7 @@ const App: React.FC = () => {
         }
     };
 
-    // Persistence Effects - Auto Save when state changes
-    useEffect(() => saveData(STORAGE_KEYS.PIGS, pigs), [pigs]);
-    useEffect(() => saveData(STORAGE_KEYS.TASKS, tasks), [tasks]);
-    useEffect(() => saveData(STORAGE_KEYS.FEEDS, feeds), [feeds]);
-    useEffect(() => saveData(STORAGE_KEYS.HEALTH, healthRecords), [healthRecords]);
-    useEffect(() => saveData(STORAGE_KEYS.FINANCE, financeRecords), [financeRecords]);
-    useEffect(() => saveData('ECOMATT_BUDGET_DB', budgets), [budgets]);
-    useEffect(() => saveData('ECOMATT_LOANS_DB', loans), [loans]);
-    useEffect(() => saveData(STORAGE_KEYS.USERS, users), [users]);
-
-    useEffect(() => saveData(STORAGE_KEYS.NOTIFICATIONS, notificationConfig), [notificationConfig]);
-    useEffect(() => saveData(STORAGE_KEYS.MEDICAL, medicalInventory), [medicalInventory]);
-    useEffect(() => saveData('ECOMATT_TIMESHEETS', timesheets), [timesheets]);
+    
 
     // Navigation State for Pig Module
     const [selectedPig, setSelectedPig] = useState<Pig | null>(null);
@@ -501,18 +478,19 @@ const App: React.FC = () => {
     const [loginError, setLoginError] = useState('');
 
     // Handlers
-    const handleLogin = (email: string, password?: string) => {
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (user && user.password === password) {
-            setCurrentUser(user);
-            setIsAuthenticated(true);
-            setLoginError('');
-            // Only show onboarding if user hasn't completed it
-            if (!user.hasCompletedOnboarding) {
-                setShowOnboarding(true);
-            }
+    const handleLogin = async (email: string, password?: string) => {
+        setIsLoading(true);
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password: password || '',
+        });
+
+        if (error) {
+            setLoginError(error.message);
+            setIsLoading(false);
         } else {
-            setLoginError('Invalid email or password.');
+            setLoginError('');
+            // Auth state listener handles the rest
         }
     };
 
@@ -527,38 +505,29 @@ const App: React.FC = () => {
 
     // Signup Handlers
     const handleSignupSubmit = async (formData: any) => {
-        setPendingUser(formData);
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        setVerificationCode(code);
+        setIsLoading(true);
+        const { data, error } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+                data: {
+                    name: `${formData.firstName} ${formData.lastName}`,
+                    role: formData.role
+                }
+            }
+        });
 
-        // Send Verification Email
-        await sendVerificationEmail(formData.email, code);
-
-        setIsSigningUp(false);
-        setIsVerifying(true);
+        if (error) {
+            alert(error.message);
+            setIsLoading(false);
+        } else {
+            alert("Signup successful! Please check your email for verification.");
+            setIsSigningUp(false);
+            setIsLoading(false);
+        }
     };
 
-    const handleVerificationSuccess = async () => {
-        if (!pendingUser) return;
-
-        const newUser: User = {
-            id: `u${Date.now()}`,
-            name: `${pendingUser.firstName} ${pendingUser.lastName}`,
-            email: pendingUser.email,
-            role: pendingUser.role as UserRole,
-            password: pendingUser.password,
-            hasCompletedOnboarding: false
-        };
-
-        setUsers([...users, newUser]);
-        setCurrentUser(newUser);
-        setIsAuthenticated(true);
-        setIsVerifying(false);
-        setShowOnboarding(true);
-
-        // Send Welcome Email
-        await sendWelcomeEmail(newUser.email, newUser.name);
-    };
+    // Removed handleVerificationSuccess as Supabase handles email verification
 
     // Automation Trigger Helper
     const checkAutomationTriggers = (eventName: string, context: any) => {
@@ -590,33 +559,53 @@ const App: React.FC = () => {
     };
 
     // Pig Management Handlers
-    const handleSaveNewPig = (newPig: Pig) => {
-        setPigs([...pigs, newPig]);
-        setIsAddingPig(false);
+    const handleSaveNewPig = async (newPig: Pig) => {
+        try {
+            const savedPig = await supabaseService.pigs.create(newPig);
+            setPigs([...pigs, savedPig]);
+            setIsAddingPig(false);
 
-        // Trigger Automation
-        // Example: If adding a Piglet, we assume a farrowing event might have occurred or we just trigger 'New_Pig_Added'
-        // For the specific user requirement "Sow Farrowed", this usually implies a batch of piglets.
-        // We will trigger 'Sow_Farrowed' if the stage is Piglet, just for demonstration of the "Autopilot".
-        if (newPig.stage === PigStage.Piglet) {
-            checkAutomationTriggers('Sow_Farrowed', { pigId: newPig.id });
+            // Trigger Automation
+            if (savedPig.stage === PigStage.Piglet) {
+                checkAutomationTriggers('Sow_Farrowed', { pigId: savedPig.id });
+            }
+        } catch (error) {
+            console.error("Error saving pig:", error);
+            alert("Failed to save pig to database.");
         }
     };
 
 
-    const handleDeletePig = (id: string) => {
-        setPigs(pigs.filter(p => p.id !== id));
-        setSelectedPig(null); // Return to list
+    const handleDeletePig = async (id: string) => {
+        try {
+            await supabaseService.pigs.delete(id);
+            setPigs(pigs.filter(p => p.id !== id));
+            setSelectedPig(null); // Return to list
+        } catch (error) {
+            console.error("Error deleting pig:", error);
+            alert("Failed to delete pig from database.");
+        }
     };
 
-    const handleUpdatePig = (updatedPig: Pig) => {
-        setPigs(pigs.map(p => p.id === updatedPig.id ? updatedPig : p));
-        setSelectedPig(updatedPig);
-        setIsEditingPig(false);
+    const handleUpdatePig = async (updatedPig: Pig) => {
+        try {
+            const savedPig = await supabaseService.pigs.update(updatedPig.id, updatedPig);
+            setPigs(pigs.map(p => p.id === savedPig.id ? savedPig : p));
+            setSelectedPig(savedPig);
+            setIsEditingPig(false);
+        } catch (error) {
+            console.error("Error updating pig:", error);
+            alert("Failed to update pig in database.");
+        }
     };
 
-    const handleUpdateTask = (updatedTask: Task) => {
-        setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+    const handleUpdateTask = async (updatedTask: Task) => {
+        try {
+            const savedTask = await supabaseService.tasks.update(updatedTask.id, updatedTask);
+            setTasks(tasks.map(t => t.id === savedTask.id ? savedTask : t));
+        } catch (error) {
+            console.error("Error updating task:", error);
+        }
     };
 
     const handleNavClick = (view: ViewState, subViewStr?: string) => {
@@ -676,7 +665,8 @@ const App: React.FC = () => {
         setCurrentView(ViewState.Vet);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         setCurrentUser(null);
         setIsAuthenticated(false);
         setCurrentView(ViewState.Dashboard);
@@ -719,15 +709,18 @@ const App: React.FC = () => {
     };
 
     // Finance Handlers
-    const handleSaveTransaction = (recordData: Omit<FinanceRecord, 'id'>) => {
-        const newRecord: FinanceRecord = {
-            id: `fin-${Date.now()}`,
-            ...recordData,
-            status: 'Paid' // Default to Paid for new logs
-        };
-        setFinanceRecords([...financeRecords, newRecord]);
-        setFinanceSubView('None');
-
+    const handleSaveTransaction = async (recordData: Omit<FinanceRecord, 'id'>) => {
+        try {
+            const savedRecord = await supabaseService.finance.create({
+                ...recordData,
+                status: 'Paid'
+            });
+            setFinanceRecords([...financeRecords, savedRecord]);
+            setFinanceSubView('None');
+        } catch (error) {
+            console.error("Error saving transaction:", error);
+            alert("Failed to save transaction to database.");
+        }
     };
 
     // Medical Inventory Handlers
@@ -1357,14 +1350,16 @@ const App: React.FC = () => {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-slate-900 border-t-4 border-green-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-400"></div>
+                <span className="ml-4 text-white font-medium">Ecommatt Cloud Loading...</span>
+            </div>
+        );
+    }
+
     if (!isAuthenticated) {
-        if (isVerifying) {
-            return <Verification
-                contactInfo={{ email: pendingUser?.email, phone: pendingUser?.phone }}
-                onVerifySuccess={handleVerificationSuccess}
-                onBack={() => { setIsVerifying(false); setIsSigningUp(true); }}
-            />;
-        }
         if (isSigningUp) {
             return <Signup
                 onSignupSubmit={handleSignupSubmit}
